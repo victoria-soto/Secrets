@@ -2,7 +2,7 @@
 
 Similar to [Whisper](http://whisper.sh/), Secrets is a secret posting application.
 
-The project demonstrates six levels of authentication and security using various [NPM](https://www.npmjs.com/) packages and OAuth 2.0 sign in with Google.
+The project demonstrates seven levels of authentication and security using various [NPM](https://www.npmjs.com/) packages and OAuth 2.0 sign in with Google.
 
 ## Initial Set-up
 Creates the app before any authentication/security measures implemented.
@@ -56,7 +56,7 @@ Below is the Robo3T MongoDB GUI to help visualize the Secrets user database. The
 
 Level 1 username and password creation only provides a very basic level of security as the user name and password is stored as plain text in the database.
 
-## Level 2 - Encryption
+## Level 2a - Encryption with mongoose-encryption
 The user database is encrypted using [mongoose-encryption](https://www.npmjs.com/package/mongoose-encryption) where a secret string defined used to encrypt the database.
 
 ### NPM Package - mongoose-encryption
@@ -81,12 +81,42 @@ The second user has an email of a@b.com with a password of qwerty, however, the 
 
 At its current state, if the secrets website is hacked, the app.js can be accessed where the secret string is stored and the same package, [mongoose-encryption](https://www.npmjs.com/package/mongoose-encryption), can be installed and used to decrypt the user's passwords in the database since the plain text version can be recovered.
 
-Next level will involve the usage of environmental variables which helps store secrets like encryption keys and API keys.
+Next layer of encryption will involve the usage of environment variables which helps store secrets like encryption keys and API keys.
 
-## Level 3 - Hashing with md5
+## Level 2b - Encryption Using Environment Variables
+Environment variables will be loaded from a .env into process.env using the NPM package [dotenv](https://www.npmjs.com/package/dotenv).
 
-## Level 4 - Hashing and Salting with bcrypt
+### NPM Package - dotenv
+```sh
+$ npm i dotenv
+```
 
-## Level 5 - Cookies and Sessions
+At the very top of the app.js the following line of code must be added:
+```
+require('dotenv').config()
+```
+Then a .env file is created at the root directory and the environment variables must be created in the form of `NAME=VALUE` for [dotenv](https://www.npmjs.com/package/dotenv).
 
-## Level 6 - Google OAuth 2.0 Authentication
+In this step, the secrets constant was removed from the app.js, reformatted, and placed in the .env file.
+
+app.js :
+
+```
+const secret = "Thisisourlittlesecret.";
+```
+
+.env :
+
+```
+SECRET=Thisisourlittlesecret.
+```
+
+**NOTE :** Any usernames, passwords and keys shown are just for demonstration purposes and are not used for the deployed app 🐱‍💻.
+
+## Level 4 - Hashing with md5
+
+## Level 5 - Hashing and Salting with bcrypt
+
+## Level 6 - Cookies and Sessions
+
+## Level 7 - Google OAuth 2.0 Authentication
