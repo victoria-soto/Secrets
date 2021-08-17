@@ -6,22 +6,30 @@ const app = express();
 // mongoose package
 const mongoose = require("mongoose");
 
+// mongoose-encryption package
+const encrypt = require("mongoose-encryption");
+
 app.use(express.static("public"));
+app.set("view engine", "ejs");
+app.use(bodyParser.urlencoded({extended: true}));
 
 // favicon
 app.use('/favicon.ico', express.static('public/images/favicon.ico'));
 
-app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({extended: true}));
-
 // connect to mongoose db
 mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true, useUnifiedTopology: true});
 
-// create userDB
-const userSchema = {
+// create new mongoose schema
+const userSchema = new mongoose.Schema ({
   email: String,
   password: String
-};
+});
+
+// define secret string for mongoose-encrypt
+const secret = "Thisisourlittlesecret.";
+
+// encrypt user databse
+userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 const User = new mongoose.model("User", userSchema);
 
