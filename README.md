@@ -36,6 +36,11 @@ Contains a database of user accounts and stores newly created accounts using [Mo
 $ npm i mongoose
 ```
 
+app.js:
+```
+const mongoose = require("mongoose");
+```
+
 ### Registration
 
 <img src="docs/register1.png"/><br/>
@@ -66,7 +71,9 @@ $ npm i mongoose-encryption
 
 A constant secret is defined in the app.js. The [mongoose-encryption](https://www.npmjs.com/package/mongoose-encryption) package gets added as a plugin to the mongoose userSchema defined where secret is passed over as an object along with an option to only encrypt the user passwords field.
 
+app.js:
 ```
+const encrypt = require('mongoose-encryption');
 const secret = "Thisisourlittlesecret.";
 userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
@@ -124,6 +131,12 @@ The [MD5](https://www.npmjs.com/package/md5) NPM package (based off the MD5 hash
 ```sh
 $ npm i md5
 ```
+
+app.js:
+```
+const md5 = require('md5');
+```
+
 The third user is registered as user@hash.com and their password has been replaced with a hash value as seen below in the Robo3T MongoDB GUI.
 
 #### Registration with md5
@@ -198,5 +211,160 @@ The database shows Levels 1-4 users and how their passwords are stored in the da
 <img src="/docs/Robo3T-NewUser4a.png"/><br>
 
 ## Level 5 - Cookies and Sessions
+The type of cookies being worked with in this level are those that establish and maintain a session. A session is a period of time a browser interacts with a server. A session cookie gets created when you've logged into a website and your credentials have been authenticated. This cookie remains active during your session and allows you to navigate throughout the site without having to login and verify your credentials again. Once you logout, the session cookie gets destroyed and you can no longer freely navigate the site that requires valid user credentials without having to login again.
+
+Implementation of cookie sessions, salting, hashing, and user authentication will be done through [passport](https://www.npmjs.com/package/passport). Passport also enables user authentication through several different services such as Google, Facebook, or Twitter.
+
+[passport](https://www.npmjs.com/package/passport)
+[passport-local](https://www.npmjs.com/package/passport-local)
+[passport-local-mongoose](https://www.npmjs.com/package/passport-local-mongoose)
+[express-session](https://www.npmjs.com/package/express-session)
+
+### NPM Packages - passport, passport-local, passport-local-mongoose, express-session
+```sh
+$ npm i passport passport-local passport-local-mongoose express-session
+```
+
+app.js:
+```
+const session = require("express-session");
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
+```
+
+### Establish Session in app.js
+Add the session code after any `app.use` and right before `mongoose.connect`
+
+app.js:
+```
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false
+}));
+```
+
+### Initialize Passport
+Right below the session code, initialize [passport](https://www.passportjs.org/docs/configure/) and use passport to set up the session.
+
+app.js:
+```
+app.use(passport.initialize());
+app.use(passport.session())
+
+```
+### Set-up passport-local-mongoose
+Create a new mongoose schema and add [passport-local-mongoose](https://www.npmjs.com/package/passport-local-mongoose) as a plugin. This will be used to hash and salt user passwords and save users into the MongoDB database.
+
+Below creating the userSchema in app.js:
+```
+userSchema.plugin(passportLocalMongoose);
+```
+
+#### Simplified Passport/Passport-Local Configuration
+A local strategy must be created to authenticate users using their username and password. Then the user will be serialized and deserialized which is necessary when using sessions. When a user is seralized, a session cookie is created which contains the user's identification and deserialization allows passport to open the session cookie and discover the identification of the user so that they may be authenticated on the server.
+
+Below creating the User mongoose model in app.js:
+```
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+```
+
+### User Registration with passport-local-mongoose
+The register method provided by the passport-local-mongoose package is used to create and save a new user.
+
+In the post method for the register route:
+
+```
+// passport-local-mongoose
+User.register({
+  username: req.body.username
+}, req.body.password, function(errm user) {
+  if (err) {
+    console.log(err);
+    res.redirect("/register");
+  } else {
+    passport.authenticate("local")(req, res, function() {
+      res.redirect("/secrets");
+    });
+  }
+});
+```
+
+#### Verify Authentication with Passport
+Once a user is registered or has successfully logged in, a session cookie gets created (that the browser holds on to) which contains information about the user—namely letting the server know that the user is authenticated. The user will then be redirected to the secrets page (listing user secrets) if their authentication is valid, else they get redirected to the login screen.
+
+app.js:
+```
+// secrets route
+app.get("/secrets", function(req, res) {
+
+  // check if user is authenticated
+  if (req.isAuthenticated()) {
+    res.render("secrets");
+  } else {
+    res.redirect("/login");
+  }
+});
+```
+
+### Registration with passport-local-mongoose
+The fifth user was registered with the user name of user@passportlocalmongoose.com.
+<img src="/docs/register5.png" /><br>
+
+#### Robo3T MongoDB GUI
+The database shows Levels 1-5 users and how their passwords are stored in the database. The fifth user's password is stored with a hash and salt value provided by the passport-local-mongoose package.
+
+<img src="/docs/Robo3T-NewUser5.png"/><br>
+
+<img src="/docs/Robo3T-NewUser5a.png"/><br>
+
+If the fifth user were to go to the homepage and then navigate back to the secrets page, they will be able to successfully without needing to login again due to the cookie that has saved the session ID.
+
+The session cookie that was stored for the localhost URL where the Secrets app is hosted, called connect.sid, shows it expires or gets deleted once the user exits the browser. So the user will need to login again to gain access to privileged areas.
+
+<img src="/docs/cookie1.png" />
+
+### Login with passport
+In the post method for the login route a new user is created.
+
+app.js:
+```
+const user = new User({
+  username: req.body.username,
+  password: req.body.password
+});
+```
+
+#### Passport Authentication
+The user is authenticated using a `login()` function on called on the req object provided by the [passport](https://www.passportjs.org/docs/login/) package.
+
+Underneath new user creation in the post method for the login route in app.js:
+```
+// passport login authentication
+req.login(user, function(err){
+  if(err){
+    console.log(err);
+  } else {
+    passport.authenticate("local")(req, res, function(){
+      res.redirect("/secrets");
+    });
+  }
+});
+```
+### Deauthentication
+When the user [logs out](https://www.passportjs.org/docs/logout/), they get deauthenticated, their session cookie expires and they get redirected from the secrets page back to the homepage where they can register or login.
+
+app.js
+```
+// get method for logout
+app.get("/logout", function(req,res){
+  req.logout();
+  res.redirect("/");
+});
+
+```
 
 ## Level 6 - Google OAuth 2.0 Authentication
