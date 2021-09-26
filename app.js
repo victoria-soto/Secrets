@@ -3,7 +3,6 @@
 require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
-const app = express();
 
 // mongoose package
 const mongoose = require("mongoose");
@@ -11,6 +10,13 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 
+// GoogleStrategy
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
+// findorcreate
+const findOrCreate = require('mongoose-findorcreate');
+
+const app = express();
 
 app.use(express.static("public"));
 app.set("view engine", "ejs");
@@ -44,11 +50,16 @@ mongoose.set('useCreateIndex', true);
 // create new mongoose schema
 const userSchema = new mongoose.Schema({
   email: String,
-  password: String
+  password: String,
+  googleID: String,
+  secret: String
 });
 
 // add passport-local-mongoose into mongoose schema as a plugin
 userSchema.plugin(passportLocalMongoose);
+
+// add mongoose-findorcreate as a plugin
+userSchema.plugin(findOrCreate);
 
 const User = new mongoose.model("User", userSchema);
 
@@ -56,13 +67,58 @@ const User = new mongoose.model("User", userSchema);
 // CHANGE: USE "createStrategy" INSTEAD OF "authenticate"
 passport.use(User.createStrategy());
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.serializeUser(function(user, done) {
+  done(null, user.id);
+});
 
+passport.deserializeUser(function(id, done) {
+  User.findById(id, function(err, user) {
+    done(err, user);
+  });
+});
+
+// Google Strategy Configuration added after serialization
+passport.use(new GoogleStrategy({
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/google/secrets"
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    // log the user profile
+    // console.log(profile);
+
+    User.findOrCreate({
+      googleId: profile.id
+    }, function(err, user) {
+      return cb(err, user);
+    });
+  }
+));
 
 // render home
 app.get("/", function(req, res) {
   res.render("home");
+});
+
+// initiate Google authentication
+app.get("/auth/google",
+  passport.authenticate('google', {
+    scope: ["profile"]
+  }));
+
+// authorized redirect URI
+app.get("/auth/google/secrets",
+  passport.authenticate('google', {
+    failureRedirect: "/login"
+  }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect("/secrets");
+  });
+
+// render login
+app.get("/login", function(req, res) {
+  res.render("login");
 });
 
 // render register
@@ -81,11 +137,6 @@ app.get("/secrets", function(req, res) {
   }
 });
 
-// get method for logout
-app.get("/logout", function(req,res){
-  req.logout();
-  res.redirect("/");
-});
 
 // post method to register new users
 app.post("/register", function(req, res) {
@@ -105,31 +156,33 @@ app.post("/register", function(req, res) {
   });
 });
 
-// render login
-app.get("/login", function(req, res) {
-  res.render("login");
-});
 
 // post method to check credentials of existing users
 app.post("/login", function(req, res) {
 
-// create new user
-const user = new User({
-  username: req.body.username,
-  password: req.body.password
+  // create new user
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password
+  });
+
+  // passport login authentication
+  req.login(user, function(err) {
+    if (err) {
+      console.log(err);
+    } else {
+      passport.authenticate("local")(req, res, function() {
+        res.redirect("/secrets");
+      });
+    }
+  });
+
 });
 
-// passport login authentication
-req.login(user, function(err){
-  if(err){
-    console.log(err);
-  } else {
-    passport.authenticate("local")(req, res, function(){
-      res.redirect("/secrets");
-    });
-  }
-});
-
+// get method for logout
+app.get("/logout", function(req, res) {
+  req.logout();
+  res.redirect("/");
 });
 
 app.listen(3000, function(req, res) {
