@@ -577,3 +577,100 @@ Add the btn-social class along with the appropriate social button—in this case
 ```
 
 <img src="/docs/googleStyleButton.png"/><br>
+
+#### Successful Login
+<img src="/docs/secretsPage.png"></br>
+
+### Secrets Functionality
+Lastly, this section shows the code required to enable users to submit secrets!
+
+Make a get request to the page where authenticated users can submit a secret:
+```
+// get request for submitting a secrets
+app.get("/submit", function(req, res) {
+
+  // check if user is authenticated
+  if (req.isAuthenticated()) {
+    res.render("submit");
+  } else {
+    res.redirect("/login");
+  }
+});
+```
+<img src="/docs/submitSecret.png"></br>
+
+Next, make a post request to allow users to post their secrets but first, another String field, `secrets` that enables passport to find the user in the database will need to be added to the `userSchema`.
+
+```
+// create new mongoose schema
+const userSchema = new mongoose.Schema({
+  email: String,
+  password: String,
+  googleId: String,
+  secret: String
+});
+```
+
+
+Post request:
+```
+// post request to submit secret
+app.post("/submit", function(req, res) {
+  const submittedSecret = req.body.secret;
+  User.findById(req.user.id, function(err, foundUser){
+    if(err) {
+      console.log(err);
+    } else {
+      if(foundUser){
+        foundUser.secret = submittedSecret;
+        foundUser.save(function(){
+          res.redirect("/secrets");
+        });
+      }
+    }
+  });
+});
+
+```
+The fith user sumbitted a secret stating they don't like sticky keys as seen in the database.
+
+<img src="/docs/userSecret.png"></br>
+
+<img src="/docs/submittedSecret.png"></br>
+
+#### Render User Secrets
+Next, the `app.get` for the secrets route will look for all user in the database to display their secrets. `Find` will be used on the User collection on the secret field.
+
+```
+// secrets route
+app.get("/secrets", function(req, res) {
+  User.find({"secret": {$ne: null}}, function(err, foundUsers){
+    if(err){
+      console.log();
+    } else {
+      if(foundUsers){
+        res.render("secrets", {userswithSecrets: foundUsers});
+      }
+    }
+  });
+  });
+```
+Now, in secrets.ejs, a `forEach` loop can be used to loop through the `userswithSecrets` array and use a callback function on each user to render the value in the `user.secrets` field into a paragraph element.
+
+In secrets.ejs:
+```
+<h1 class="display-3">You've Discovered My Secret!</h1>
+<p class="secret-text">Jack Bauer is my hero.</p>
+
+<% userswithSecrets.forEach(function(user){ %>
+  <p class="secret-text"><%=user.secret%></p>
+<%}); %>
+<hr>
+
+```
+
+<img src="/docs/renderedSecrets.png"></br>
+
+Another Secret Submitted (for fun) 🐱‍👓!
+
+<img src="/docs/loveStickyKeys.png"></br>

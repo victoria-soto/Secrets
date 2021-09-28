@@ -51,7 +51,7 @@ mongoose.set('useCreateIndex', true);
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
-  googleID: String,
+  googleId: String,
   secret: String
 });
 
@@ -130,11 +130,60 @@ app.get("/register", function(req, res) {
 app.get("/secrets", function(req, res) {
 
   // check if user is authenticated
+  // if (req.isAuthenticated()) {
+  //   res.render("secrets");
+  // } else {
+  //   res.redirect("/login");
+  // }
+
+  User.find({"secret": {$ne: null}}, function(err, foundUsers){
+    if(err){
+      console.log();
+    } else {
+      if(foundUsers){
+        res.render("secrets", {userswithSecrets: foundUsers});
+      }
+    }
+  });
+});
+
+// get request for submitting a secrets
+app.get("/submit", function(req, res) {
+
+  // check if user is authenticated
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    res.render("submit");
   } else {
     res.redirect("/login");
   }
+});
+
+// post request to submit secret
+app.post("/submit", function(req, res) {
+  const submittedSecret = req.body.secret;
+
+  // log user id
+  // console.log(req.user.id);
+
+  User.findById(req.user.id, function(err, foundUser){
+    if(err) {
+      console.log(err);
+    } else {
+      if(foundUser){
+        foundUser.secret = submittedSecret;
+        foundUser.save(function(){
+          res.redirect("/secrets");
+        });
+      }
+    }
+  });
+});
+
+
+// get method for logout
+app.get("/logout", function(req, res) {
+  req.logout();
+  res.redirect("/");
 });
 
 
@@ -177,12 +226,6 @@ app.post("/login", function(req, res) {
     }
   });
 
-});
-
-// get method for logout
-app.get("/logout", function(req, res) {
-  req.logout();
-  res.redirect("/");
 });
 
 app.listen(3000, function(req, res) {
