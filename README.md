@@ -675,4 +675,4 @@ In secrets.ejs:
 
 #### MongoDB Atlas Database Cluster
 
-<img src="/docs/MongoDBAtlas.png"></br>
+<img src="/docs/mongoDBAtlas.png"></br>
