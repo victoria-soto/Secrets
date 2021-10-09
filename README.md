@@ -1,5 +1,7 @@
 # Secrets
 
+Deployed on [Heroku](https://boiling-tundra-41595.herokuapp.com/)
+
 Similar to [Whisper](http://whisper.sh/), Secrets is a secret posting application.
 
 The project demonstrates six levels of authentication and security using various [NPM](https://www.npmjs.com/) packages and OAuth 2.0 sign in with Google.
