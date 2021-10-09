@@ -671,8 +671,8 @@ In secrets.ejs:
 
 ```
 
-<img src="/docs/renderedSecrets.png"></br>
+<img src="/docs/SecretsPageUsers3.png"></br>
 
-Another Secret Submitted (for fun) 🐱‍👓!
+#### MongoDB Atlas Database Cluster
 
-<img src="/docs/loveStickyKeys.png"></br>
+<img src="/docs/MongoDBAtlas.png"></br>
