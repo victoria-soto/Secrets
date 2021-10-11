@@ -671,7 +671,7 @@ In secrets.ejs:
 
 ```
 
-<img src="/docs/SecretsPageUsers3.png"></br>
+<img src="/docs/secretsCurrent.png"></br>
 
 #### MongoDB Atlas Database Cluster
 
