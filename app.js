@@ -39,11 +39,10 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // connect to mongoose db
-mongoose.connect("mongodb://localhost:27017/userDB", {
+mongoose.connect("mongodb+srv://admin-userName:password@cluster0.olsao.mongodb.net/userDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-
 // addresses deprication warning: collection.ensureIndex is deprecated
 mongoose.set('useCreateIndex', true);
 
@@ -81,14 +80,15 @@ passport.deserializeUser(function(id, done) {
 passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/google/secrets"
+    callbackURL: "https://boiling-tundra-41595.herokuapp.com/auth/google/secrets"
   },
   function(accessToken, refreshToken, profile, cb) {
     // log the user profile
     // console.log(profile);
 
     User.findOrCreate({
-      googleId: profile.id
+      googleId: profile.id,
+      username: profile.name.givenName
     }, function(err, user) {
       return cb(err, user);
     });
@@ -228,6 +228,12 @@ app.post("/login", function(req, res) {
 
 });
 
-app.listen(3000, function(req, res) {
-  console.log("Server started on port 3000.");
+// Heroku deployment
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 3000;
+}
+
+app.listen(port, function() {
+  console.log("Server started successfully.");
 });
