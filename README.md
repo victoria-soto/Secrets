@@ -676,3 +676,7 @@ In secrets.ejs:
 #### MongoDB Atlas Database Cluster
 
 <img src="/docs/mongoDBAtlas.png"></br>
+
+## Acknowledgement
+Secrets is a challenge coding project part of Dr. Angela Yu's [The Complete 2021 Web Development Bootcamp course](https://www.udemy.com/course/the-complete-web-development-bootcamp/). Thanks Dr. Yu!
+
